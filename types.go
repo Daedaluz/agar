@@ -52,6 +52,20 @@ type Node struct {
 	Name string
 }
 
+func (u *Node) Update(n *Node) {
+	u.Position = n.Position
+	u.Radius = n.Radius
+	u.Color = n.Color
+	u.Flags = n.Flags
+	if n.Face != "" {
+		u.Face = n.Face
+	}
+
+	if n.Name != "" {
+		u.Name = n.Name
+	}
+}
+
 func (u *Node) Virus() bool {
 	return (u.Flags & 1) > 0
 }
