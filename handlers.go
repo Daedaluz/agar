@@ -69,8 +69,7 @@ func updateNodes(c *Client, i io.Reader) {
 		if blobUpdate.HasFace() {
 			data := make([]byte, 0, 30)
 			var c byte
-			for ; c != 0; binary.Read(i, binary.LittleEndian, &c) {
-				log.Println("Read face part: %c", c)
+			for binary.Read(i, binary.LittleEndian, &c); c != 0; binary.Read(i, binary.LittleEndian, &c) {
 				data = append(data, c)
 			}
 			blobUpdate.Face = string(data)
