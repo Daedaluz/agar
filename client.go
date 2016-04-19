@@ -3,6 +3,7 @@ package agar
 import (
 	"log"
 	"encoding/binary"
+	"bytes"
 	"github.com/gorilla/websocket"
 	"github.com/daedaluz/agar/intern"
 	"net/http"
@@ -16,6 +17,7 @@ type Ondc interface {
 type Client struct {
 	sync.Mutex
 	c *websocket.Conn
+	tee []*websocket.Conn
 	name string
 	handlers map[uint8]handler
 	cfg interface{}
@@ -64,6 +66,7 @@ func NewClient(srv *Server, handlers interface{}) (*Client, error) {
 		c: sock,
 		handlers: stdHandlers,
 		cfg: handlers,
+		tee: make([]*websocket.Conn, 0, 10),
 	}
 	go cli.reader()
 	return cli, nil
@@ -71,11 +74,19 @@ func NewClient(srv *Server, handlers interface{}) (*Client, error) {
 
 func (c *Client) reader() {
 	for {
-		_, reader, err := c.c.NextReader()
+		t, data, err := c.c.ReadMessage()
 		if err != nil {
 			log.Println(err)
 			break
 		}
+		for i, tee := range c.tee {
+			if tee != nil {
+				if err := tee.WriteMessage(t, data); err != nil {
+					c.tee[i] = nil
+				}
+			}
+		}
+		reader := bytes.NewBuffer(data)
 		var packetID uint8
 		binary.Read(reader, binary.LittleEndian, &packetID)
 		if decoder, exist := c.handlers[packetID]; exist {
@@ -87,6 +98,10 @@ func (c *Client) reader() {
 	if x, ok := c.cfg.(Ondc); ok {
 		x.OnDisconnect()
 	}
+}
+
+func (c *Client) Tee(dst *websocket.Conn) {
+	c.tee = append(c.tee, dst)
 }
 
 func (c *Client) SetName(name string) {

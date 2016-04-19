@@ -33,9 +33,26 @@ func WriteString(o io.Writer, text string) {
 	codes := []rune(text)
 	toprint := utf16.Encode(codes)
 	toprint = append(toprint, uint16(0))
-	for _, x := range toprint {
-		binary.Write(buf, binary.LittleEndian, x)
-	}
+	binary.Write(buf, binary.LittleEndian, toprint)
 	o.Write(buf.Bytes())
 }
+
+//func WriteString(o io.Writer, text string) {
+//	buf := new(bytes.Buffer)
+//	runes := make([]rune, 0, 10)
+//	b := []byte(text)
+//
+//	for len(b) > 0 {
+//		r, size := utf8.DecodeRune(b)
+//		runes = append(runes, r)
+//		b = b[size:]
+//	}
+//
+//	encoded := utf16.Encode(runes)
+//	encoded = append(encoded, uint16(0))
+//
+//	binary.Write(buf, binary.LittleEndian, encoded)
+//
+//	o.Write(buf.Bytes())
+//}
 
